@@ -1,12 +1,11 @@
 package com.notes.ui.details
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.notes.data.NoteDatabase
-import com.notes.ui.RootViewModel
+import com.notes.data.NoteDbo
 import com.notes.ui.list.NoteListItem
 import com.notes.ui.toNoteDbo
 import com.notes.ui.toNoteListItem
@@ -15,41 +14,55 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 class NoteDetailsViewModel(
-    noteId: Long,
     private val noteDatabase: NoteDatabase
 ) : ViewModel() {
 
-    private val TAG = NoteDetailsViewModel::class.java.simpleName
-
     val note: LiveData<NoteListItem?> by lazy { MutableLiveData() }
 
-    init {
-        Log.e(TAG, "$noteId")
+    fun saveNote(title: String, content: String) {
+        if (note.value != null) {
+            updateNote(title, content)
+        } else {
+            if (title != "" || content != "") {
+                createNewNote(title, content)
+            }
+        }
+    }
 
+    fun openNote(id: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             (note as MutableLiveData).postValue(
-                if (noteId == 0L) {
-                    noteDatabase.noteDao().getLastNote().toNoteListItem()
-                } else {
-                    noteDatabase.noteDao().getNoteByID(noteId).toNoteListItem()
-                }
+                noteDatabase.noteDao().getNoteByID(id)?.toNoteListItem()
             )
         }
     }
 
-    fun saveNote(title: String, content: String, rootViewModel: RootViewModel) {
-        note.value?.let {
-            if (it.title != title || it.content != content) {
-                it.title = title
-                it.content = content
-                it.modifiedAt = LocalDateTime.now()
+    private fun updateNote(title: String, content: String) {
+        val note = this.note.value!!
 
-                viewModelScope.launch(Dispatchers.IO) {
-                    noteDatabase.noteDao().updateNote(it.toNoteDbo())
-                }
+        if (note.title != title || note.content != content) {
+            note.title = title
+            note.content = content
+            note.modifiedAt = LocalDateTime.now()
 
-                rootViewModel.updateList()
+            viewModelScope.launch(Dispatchers.IO) {
+                noteDatabase.noteDao().updateNote(note.toNoteDbo())
             }
+        }
+    }
+
+    private fun createNewNote(title: String, content: String) {
+        val noteTitle = if (title != "") title else "Title"
+
+        viewModelScope.launch(Dispatchers.IO) {
+            noteDatabase.noteDao().insertAll(
+                NoteDbo(
+                    title = noteTitle,
+                    content = content,
+                    createdAt = LocalDateTime.now(),
+                    modifiedAt = LocalDateTime.now(),
+                )
+            )
         }
     }
 }

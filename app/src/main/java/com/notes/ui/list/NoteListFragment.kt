@@ -5,25 +5,26 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
+import com.notes.App
 import com.notes.databinding.FragmentNoteListBinding
 import com.notes.databinding.ListItemNoteBinding
-import com.notes.di.DependencyManager
 import com.notes.ui.BUNDLE_KEY_NOTE_ID
-import com.notes.ui.RootViewModel
 import com.notes.ui._base.FragmentNavigator
 import com.notes.ui._base.ViewBindingFragment
 import com.notes.ui._base.findImplementationOrThrow
 import com.notes.ui.details.NoteDetailsFragment
+import javax.inject.Inject
 
 class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
     FragmentNoteListBinding::inflate
 ) {
 
-    private val viewModel by lazy { DependencyManager.noteListViewModel() }
-    private val rootViewModel: RootViewModel by activityViewModels()
+    @Inject
+    lateinit var viewModelFactory: NoteListViewModelFactory
+    private val viewModel: NoteListViewModel by viewModels { viewModelFactory }
 
     private val itemClicked = fun(noteId: Long) {
         viewModel.noteClicked(noteId)
@@ -34,6 +35,12 @@ class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
     }
 
     private val recyclerViewAdapter = RecyclerViewAdapter(itemClicked, deleteItem)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        (requireActivity().application as App).appComponent.inject(this)
+    }
 
     override fun onViewBindingCreated(
         viewBinding: FragmentNoteListBinding,
@@ -58,16 +65,7 @@ class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
             }
         }
 
-        viewModel.navigateToNoteCreation.observe(viewLifecycleOwner) {
-            it?.let {
-                findImplementationOrThrow<FragmentNavigator>()
-                    .navigateTo(
-                        NoteDetailsFragment()
-                    )
-            }
-        }
-
-        viewModel.navigateToNoteSelected.observe(viewLifecycleOwner) {
+        viewModel.navigateToNoteDetails.observe(viewLifecycleOwner) {
             it?.let {
                 findImplementationOrThrow<FragmentNavigator>()
                     .navigateTo(
@@ -77,15 +75,6 @@ class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
                             }
                         }
                     )
-            }
-        }
-
-        rootViewModel.isUpdateList.observe(viewLifecycleOwner) {
-            it?.let {
-                if (it) {
-                    viewModel.updateLise()
-                    rootViewModel.listUpdated()
-                }
             }
         }
     }
@@ -135,7 +124,6 @@ class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
         ) : RecyclerView.ViewHolder(
             binding.root
         ) {
-
             fun bind(
                 note: NoteListItem
             ) {
@@ -151,9 +139,6 @@ class NoteListFragment : ViewBindingFragment<FragmentNoteListBinding>(
                     deleteItem.invoke(note)
                 }
             }
-
         }
-
     }
-
 }

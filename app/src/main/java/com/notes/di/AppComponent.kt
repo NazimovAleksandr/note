@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.notes.data.NoteDatabase
+import com.notes.ui.details.NoteDetailsFragment
+import com.notes.ui.list.NoteListFragment
 import dagger.*
 import javax.inject.Singleton
 
@@ -22,8 +24,8 @@ interface AppComponent {
         ): AppComponent
     }
 
-    fun getNoteDatabase(): NoteDatabase
-
+    fun inject(fragment: NoteListFragment)
+    fun inject(fragment: NoteDetailsFragment)
 }
 
 @Module(
@@ -33,6 +35,7 @@ interface AppComponent {
 )
 class AppModule {
 
+    @Singleton
     @Provides
     fun provideNoteDatabase(
         context: Context
@@ -44,10 +47,7 @@ class AppModule {
 
     @Module
     interface Binding {
-
         @Binds
         fun bindContext(application: Application): Context
-
     }
-
 }

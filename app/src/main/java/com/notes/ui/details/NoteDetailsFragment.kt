@@ -1,24 +1,31 @@
 package com.notes.ui.details
 
 import android.os.Bundle
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import com.notes.App
 import com.notes.databinding.FragmentNoteDetailsBinding
-import com.notes.di.DependencyManager
 import com.notes.ui.BUNDLE_KEY_NOTE_ID
-import com.notes.ui.RootViewModel
 import com.notes.ui._base.ViewBindingFragment
+import javax.inject.Inject
 
 class NoteDetailsFragment : ViewBindingFragment<FragmentNoteDetailsBinding>(
     FragmentNoteDetailsBinding::inflate
 ) {
 
-    private val rootViewModel: RootViewModel by activityViewModels()
-
+    @Inject
+    lateinit var viewModelFactory: NoteDetailsViewModelFactory
     private val viewModel: NoteDetailsViewModel by viewModels {
-        DependencyManager.noteDetailsViewModelFactory(
-            arguments?.getLong(BUNDLE_KEY_NOTE_ID) ?: 0,
-        )
+        viewModelFactory
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        (requireActivity().application as App).appComponent.inject(this)
+
+        arguments?.let {
+            viewModel.openNote(it.getLong(BUNDLE_KEY_NOTE_ID))
+        }
     }
 
     override fun onViewBindingCreated(
@@ -43,8 +50,7 @@ class NoteDetailsFragment : ViewBindingFragment<FragmentNoteDetailsBinding>(
         super.onPause()
         viewModel.saveNote(
             viewBinding?.noteTitle?.text.toString(),
-            viewBinding?.noteDetails?.text.toString(),
-            rootViewModel
+            viewBinding?.noteDetails?.text.toString()
         )
     }
 }

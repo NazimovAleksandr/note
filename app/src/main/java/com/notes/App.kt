@@ -1,13 +1,11 @@
 package com.notes
 
 import android.app.Application
-import com.notes.di.DependencyManager
+import com.notes.di.AppComponent
+import com.notes.di.DaggerAppComponent
 
 class App : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-        DependencyManager.init(this)
-    }
-
+    val appComponent: AppComponent = DaggerAppComponent
+        .factory()
+        .create(this)
 }

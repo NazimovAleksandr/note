@@ -19,8 +19,5 @@ interface NoteDao {
     fun deleteNote(note: NoteDbo)
 
     @Query("SELECT * FROM notes WHERE id = :id")
-    fun getNoteByID(id: Long): NoteDbo
-
-    @Query("SELECT * FROM notes ORDER BY id DESC LIMIT 1")
-    fun getLastNote(): NoteDbo
+    fun getNoteByID(id: Long): NoteDbo?
 }
